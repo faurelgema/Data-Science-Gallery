@@ -1,0 +1,590 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "DecisionTrees.ipynb",
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "accelerator": "GPU"
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "qrBqRtPtBKSd"
+      },
+      "source": [
+        "<h1><center>Decision Trees</center></h1>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "d_AGyuEBBPSe"
+      },
+      "source": [
+        "## Importing the required libraries"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "qCm-mz5kBKqw"
+      },
+      "source": [
+        "import numpy as np \n",
+        "import pandas as pd\n",
+        "from sklearn.tree import DecisionTreeClassifier"
+      ],
+      "execution_count": 1,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "f20EcchGBY6i"
+      },
+      "source": [
+        "## About the dataset\n",
+        "\n",
+        "We have collected data about a set of patients, all of whom suffered from the same illness. During their course of treatment, each patient responded to one of 5 medications, Drug A, Drug B, Drug c, Drug x and y."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "nlmvk3LOBSfO",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "9559ec94-bcbe-4657-e03e-b8cc84add25a"
+      },
+      "source": [
+        "!wget -O drug200.csv https://s3-api.us-geo.objectstorage.softlayer.net/cf-courses-data/CognitiveClass/ML0101ENv3/labs/drug200.csv"
+      ],
+      "execution_count": 2,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "--2022-02-07 14:26:32--  https://s3-api.us-geo.objectstorage.softlayer.net/cf-courses-data/CognitiveClass/ML0101ENv3/labs/drug200.csv\n",
+            "Resolving s3-api.us-geo.objectstorage.softlayer.net (s3-api.us-geo.objectstorage.softlayer.net)... 67.228.254.196\n",
+            "Connecting to s3-api.us-geo.objectstorage.softlayer.net (s3-api.us-geo.objectstorage.softlayer.net)|67.228.254.196|:443... connected.\n",
+            "HTTP request sent, awaiting response... 200 OK\n",
+            "Length: 6027 (5.9K) [text/csv]\n",
+            "Saving to: ‘drug200.csv’\n",
+            "\n",
+            "drug200.csv         100%[===================>]   5.89K  --.-KB/s    in 0s      \n",
+            "\n",
+            "2022-02-07 14:26:33 (825 MB/s) - ‘drug200.csv’ saved [6027/6027]\n",
+            "\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "LhOP7zrrBekn",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 206
+        },
+        "outputId": "01f98331-47b9-4979-ac74-4ec8142f2dde"
+      },
+      "source": [
+        "my_data = pd.read_csv(\"drug200.csv\", delimiter=\",\")\n",
+        "my_data[0:5]"
+      ],
+      "execution_count": 3,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/html": [
+              "\n",
+              "  <div id=\"df-2a8170b2-5686-43a7-aafb-b0fbb3b2cdd5\">\n",
+              "    <div class=\"colab-df-container\">\n",
+              "      <div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>Age</th>\n",
+              "      <th>Sex</th>\n",
+              "      <th>BP</th>\n",
+              "      <th>Cholesterol</th>\n",
+              "      <th>Na_to_K</th>\n",
+              "      <th>Drug</th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>0</th>\n",
+              "      <td>23</td>\n",
+              "      <td>F</td>\n",
+              "      <td>HIGH</td>\n",
+              "      <td>HIGH</td>\n",
+              "      <td>25.355</td>\n",
+              "      <td>drugY</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>1</th>\n",
+              "      <td>47</td>\n",
+              "      <td>M</td>\n",
+              "      <td>LOW</td>\n",
+              "      <td>HIGH</td>\n",
+              "      <td>13.093</td>\n",
+              "      <td>drugC</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>2</th>\n",
+              "      <td>47</td>\n",
+              "      <td>M</td>\n",
+              "      <td>LOW</td>\n",
+              "      <td>HIGH</td>\n",
+              "      <td>10.114</td>\n",
+              "      <td>drugC</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>3</th>\n",
+              "      <td>28</td>\n",
+              "      <td>F</td>\n",
+              "      <td>NORMAL</td>\n",
+              "      <td>HIGH</td>\n",
+              "      <td>7.798</td>\n",
+              "      <td>drugX</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>4</th>\n",
+              "      <td>61</td>\n",
+              "      <td>F</td>\n",
+              "      <td>LOW</td>\n",
+              "      <td>HIGH</td>\n",
+              "      <td>18.043</td>\n",
+              "      <td>drugY</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "</div>\n",
+              "      <button class=\"colab-df-convert\" onclick=\"convertToInteractive('df-2a8170b2-5686-43a7-aafb-b0fbb3b2cdd5')\"\n",
+              "              title=\"Convert this dataframe to an interactive table.\"\n",
+              "              style=\"display:none;\">\n",
+              "        \n",
+              "  <svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\"viewBox=\"0 0 24 24\"\n",
+              "       width=\"24px\">\n",
+              "    <path d=\"M0 0h24v24H0V0z\" fill=\"none\"/>\n",
+              "    <path d=\"M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z\"/><path d=\"M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z\"/>\n",
+              "  </svg>\n",
+              "      </button>\n",
+              "      \n",
+              "  <style>\n",
+              "    .colab-df-container {\n",
+              "      display:flex;\n",
+              "      flex-wrap:wrap;\n",
+              "      gap: 12px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert {\n",
+              "      background-color: #E8F0FE;\n",
+              "      border: none;\n",
+              "      border-radius: 50%;\n",
+              "      cursor: pointer;\n",
+              "      display: none;\n",
+              "      fill: #1967D2;\n",
+              "      height: 32px;\n",
+              "      padding: 0 0 0 0;\n",
+              "      width: 32px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert:hover {\n",
+              "      background-color: #E2EBFA;\n",
+              "      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);\n",
+              "      fill: #174EA6;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert {\n",
+              "      background-color: #3B4455;\n",
+              "      fill: #D2E3FC;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert:hover {\n",
+              "      background-color: #434B5C;\n",
+              "      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);\n",
+              "      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));\n",
+              "      fill: #FFFFFF;\n",
+              "    }\n",
+              "  </style>\n",
+              "\n",
+              "      <script>\n",
+              "        const buttonEl =\n",
+              "          document.querySelector('#df-2a8170b2-5686-43a7-aafb-b0fbb3b2cdd5 button.colab-df-convert');\n",
+              "        buttonEl.style.display =\n",
+              "          google.colab.kernel.accessAllowed ? 'block' : 'none';\n",
+              "\n",
+              "        async function convertToInteractive(key) {\n",
+              "          const element = document.querySelector('#df-2a8170b2-5686-43a7-aafb-b0fbb3b2cdd5');\n",
+              "          const dataTable =\n",
+              "            await google.colab.kernel.invokeFunction('convertToInteractive',\n",
+              "                                                     [key], {});\n",
+              "          if (!dataTable) return;\n",
+              "\n",
+              "          const docLinkHtml = 'Like what you see? Visit the ' +\n",
+              "            '<a target=\"_blank\" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'\n",
+              "            + ' to learn more about interactive tables.';\n",
+              "          element.innerHTML = '';\n",
+              "          dataTable['output_type'] = 'display_data';\n",
+              "          await google.colab.output.renderOutput(dataTable, element);\n",
+              "          const docLink = document.createElement('div');\n",
+              "          docLink.innerHTML = docLinkHtml;\n",
+              "          element.appendChild(docLink);\n",
+              "        }\n",
+              "      </script>\n",
+              "    </div>\n",
+              "  </div>\n",
+              "  "
+            ],
+            "text/plain": [
+              "   Age Sex      BP Cholesterol  Na_to_K   Drug\n",
+              "0   23   F    HIGH        HIGH   25.355  drugY\n",
+              "1   47   M     LOW        HIGH   13.093  drugC\n",
+              "2   47   M     LOW        HIGH   10.114  drugC\n",
+              "3   28   F  NORMAL        HIGH    7.798  drugX\n",
+              "4   61   F     LOW        HIGH   18.043  drugY"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 3
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "8wtilElgBuRH"
+      },
+      "source": [
+        "## Pre processing\n",
+        "\n",
+        "1.   Converting the data into an array.\n",
+        "2.   Changing categorical variables to integer values.\n",
+        "3.   Converting the output variable to an array."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "zhr3oBiYBhN7",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "f534823b-3a5c-40a9-f814-d3280609f7c5"
+      },
+      "source": [
+        "X = my_data[['Age', 'Sex', 'BP', 'Cholesterol', 'Na_to_K']].values\n",
+        "X[0:5]"
+      ],
+      "execution_count": 4,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "array([[23, 'F', 'HIGH', 'HIGH', 25.355],\n",
+              "       [47, 'M', 'LOW', 'HIGH', 13.093],\n",
+              "       [47, 'M', 'LOW', 'HIGH', 10.114],\n",
+              "       [28, 'F', 'NORMAL', 'HIGH', 7.798],\n",
+              "       [61, 'F', 'LOW', 'HIGH', 18.043]], dtype=object)"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 4
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "qW08URHeCIAp",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "e9e87062-1ad4-4821-d2f4-c3826d9d8c7f"
+      },
+      "source": [
+        "from sklearn import preprocessing\n",
+        "le_sex = preprocessing.LabelEncoder()\n",
+        "le_sex.fit(['F','M'])\n",
+        "X[:,1] = le_sex.transform(X[:,1]) \n",
+        "\n",
+        "\n",
+        "le_BP = preprocessing.LabelEncoder()\n",
+        "le_BP.fit([ 'LOW', 'NORMAL', 'HIGH'])\n",
+        "X[:,2] = le_BP.transform(X[:,2])\n",
+        "\n",
+        "\n",
+        "le_Chol = preprocessing.LabelEncoder()\n",
+        "le_Chol.fit([ 'NORMAL', 'HIGH'])\n",
+        "X[:,3] = le_Chol.transform(X[:,3]) \n",
+        "\n",
+        "X[0:5]\n"
+      ],
+      "execution_count": 5,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "array([[23, 0, 0, 0, 25.355],\n",
+              "       [47, 1, 1, 0, 13.093],\n",
+              "       [47, 1, 1, 0, 10.114],\n",
+              "       [28, 0, 2, 0, 7.798],\n",
+              "       [61, 0, 1, 0, 18.043]], dtype=object)"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 5
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "uKJKr9ApCK3X",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "cd220ffe-5270-4ba3-9d5c-7d45c33cccfc"
+      },
+      "source": [
+        "y = my_data[\"Drug\"]\n",
+        "y[0:5]"
+      ],
+      "execution_count": 6,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "0    drugY\n",
+              "1    drugC\n",
+              "2    drugC\n",
+              "3    drugX\n",
+              "4    drugY\n",
+              "Name: Drug, dtype: object"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 6
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "_yUW7Y4bCg5H"
+      },
+      "source": [
+        "## Setting up the decision tree"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "YC48rc2JCbra"
+      },
+      "source": [
+        "from sklearn.model_selection import train_test_split"
+      ],
+      "execution_count": 7,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "n8LSXpn9Ck6l"
+      },
+      "source": [
+        "X_trainset, X_testset, y_trainset, y_testset = train_test_split(X, y, test_size=0.3, random_state=3)"
+      ],
+      "execution_count": 8,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "4fRF9zFBCqi1"
+      },
+      "source": [
+        "## Training the Machine Learning Model"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        ""
+      ],
+      "metadata": {
+        "id": "C31M2og3oFA-"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "xl6bc3pACmia",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "89c5b3d6-0dfd-4abf-e5c5-47cb3abda714"
+      },
+      "source": [
+        "drugTree = DecisionTreeClassifier(criterion=\"entropy\", max_depth = 4)\n",
+        "drugTree # it shows the default parameters"
+      ],
+      "execution_count": 9,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "DecisionTreeClassifier(criterion='entropy', max_depth=4)"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 9
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "LxHbu7fOCvfu",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "e27bd0e8-8d1b-4ecb-b56f-55911e5b7848"
+      },
+      "source": [
+        "drugTree.fit(X_trainset,y_trainset)"
+      ],
+      "execution_count": 10,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "DecisionTreeClassifier(criterion='entropy', max_depth=4)"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 10
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "V7YKivRNC9Zk"
+      },
+      "source": [
+        "## Prediction"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "alef99wcC5BA"
+      },
+      "source": [
+        "predTree = drugTree.predict(X_testset)"
+      ],
+      "execution_count": 11,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "C7fQwYy-C7T-",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "1f9da012-38dc-4c32-a7ce-4bfc8abedfdd"
+      },
+      "source": [
+        "print (predTree [0:5])\n",
+        "print (y_testset [0:5])\n"
+      ],
+      "execution_count": 12,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "['drugY' 'drugX' 'drugX' 'drugX' 'drugX']\n",
+            "40     drugY\n",
+            "51     drugX\n",
+            "139    drugX\n",
+            "197    drugX\n",
+            "170    drugX\n",
+            "Name: Drug, dtype: object\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "6j1NoMiGDGXp"
+      },
+      "source": [
+        "## Evaluation of the decision tree"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "MEZ0ApgqDA14",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "195ae824-f899-42d0-a227-e01c938a1bab"
+      },
+      "source": [
+        "from sklearn import metrics\n",
+        "import matplotlib.pyplot as plt\n",
+        "print(\"DecisionTrees's Accuracy: \", metrics.accuracy_score(y_testset, predTree))"
+      ],
+      "execution_count": 13,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "DecisionTrees's Accuracy:  0.9833333333333333\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
